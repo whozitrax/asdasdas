@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1018" />
+  <title>GiftRelayer</title>
+  <script src="https://telegram.org/js/telegram-web-app.js?64"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <style>
+:root { color-scheme: light; --text:#0f1b33; --hint:#6b7a90; --accent:#1d8ff2; --ok:#22b45f; --danger:#e5484d; --line:#e3ecf7; --card:#fff; --safe-bottom:max(env(safe-area-inset-bottom),14px); }
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+html, body { margin:0; height:100%; overflow:hidden; color:var(--text); background:linear-gradient(180deg,#eaf4ff 0%,#fff 36%);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased; }
+body { height:var(--tg-viewport-stable-height,100dvh); }
+button { font:inherit; }
+.app-shell { height:100%; width:min(100%,600px); margin:0 auto; display:flex; flex-direction:column; }
+.content-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:14px 16px 20px; }
+.topbar { text-align:center; padding:6px 0 12px; } .topbar h1 { margin:0; font-size:28px; font-weight:800; letter-spacing:-.03em; } #closeTop { display:none; }
+.status-pill { display:flex; width:fit-content; margin:0 auto 14px; align-items:center; gap:8px; padding:8px 16px; border-radius:999px; background:#e3f7ea; color:#1a9a52; font-size:14px; font-weight:700; }
+.status-pill .dot { width:9px; height:9px; border-radius:50%; background:currentColor; }
+.gift-stage { position:relative; width:100%; aspect-ratio:1.25; border-radius:26px; overflow:hidden; display:grid; place-items:center; background:radial-gradient(circle at 50% 40%,#d6ebff,#a9d2fb); box-shadow:0 8px 28px rgba(40,110,190,.14); }
+#giftImage, .gift-media { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.gift-lottie svg { width:100% !important; height:100% !important; } .gift-fallback { font-size:84px; }
+.skeleton-card .gift-stage { opacity:.65; }
+.gift-meta { text-align:center; padding:20px 4px 0; }
+.headline { font-size:25px; line-height:1.2; font-weight:800; letter-spacing:-.025em; overflow-wrap:anywhere; }
+.gift-meta h2 { margin:8px 0 0; font-size:20px; font-weight:600; color:var(--hint); }
+.gift-link { margin:8px 0 0; padding:0; border:0; background:none; color:var(--accent); font-size:15px; font-weight:600; cursor:pointer; }
+.price { margin:14px 0 18px; font-size:clamp(46px,14vw,66px); font-weight:800; letter-spacing:-.05em; line-height:1; color:var(--accent); }
+.price-cur { margin-left:8px; font-size:.78em; letter-spacing:0; }
+.rows { text-align:left; border-radius:24px; background:var(--card); border:1px solid var(--line); padding:4px 18px; box-shadow:0 6px 24px rgba(30,90,160,.06); }
+.row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 0; font-size:17px; } .row + .row { border-top:1px solid var(--line); }
+.row > span { color:var(--hint); } .row b { font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
+.timer-bar { display:none; }
+.info-box { margin-top:12px; padding:14px 18px; border-radius:20px; background:#eef5fd; color:var(--hint); font-size:15px; line-height:1.4; text-align:left; } .info-box strong { display:block; color:var(--text); }
+.actions { flex:0 0 auto; display:grid; gap:10px; padding:12px 16px var(--safe-bottom); background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%); }
+.actions:empty { display:none; }
+.btn { width:100%; min-height:58px; border:0; border-radius:22px; padding:14px 18px; font-size:18px; font-weight:700; cursor:pointer; transition:opacity .15s, transform .1s; }
+.btn:active { opacity:.85; transform:scale(.99); } .btn:disabled { opacity:.5; }
+.btn-primary { color:#fff; background:linear-gradient(180deg,#2b9ff6,#1686ea); box-shadow:0 10px 24px rgba(29,143,242,.28); }
+.btn-success { color:#fff; background:linear-gradient(180deg,#34c76f,#20a85a); box-shadow:0 10px 24px rgba(34,180,95,.24); }
+.btn-secondary { min-height:52px; color:var(--danger); background:#f0f3f8; } .btn-ghost { color:var(--accent); background:#eaf2fc; }
+.overlay { position:fixed; inset:0; z-index:20; background:rgba(15,27,51,.35); display:flex; align-items:flex-end; justify-content:center; animation:fade .18s ease; }
+.sheet { width:min(100%,560px); padding:22px 18px calc(var(--safe-bottom) + 8px); border-radius:26px 26px 0 0; background:#fff; animation:rise .22s ease; }
+.sheet h3 { margin:0 0 6px; font-size:21px; } .sheet p { margin:0 0 16px; color:var(--hint); line-height:1.45; } .sheet-actions { display:grid; gap:10px; }
+.loader { width:26px; height:26px; border:3px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to { transform:rotate(360deg); } } @keyframes fade { from { opacity:0; } } @keyframes rise { from { transform:translateY(24px); opacity:0; } }
+.status-screen { text-align:center; padding:56px 16px 16px; } .status-icon { font-size:60px; margin-bottom:12px; } .status-screen h2 { margin:0; font-size:26px; } .status-screen p { color:var(--hint); line-height:1.5; }
+@media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+/* ===== v3: compact one-screen layout, animated gift on a styled stage ===== */
+.topbar { display:none; }
+.content-scroll { padding:10px 16px 8px; }
+.status-pill { margin:0 auto 10px; padding:6px 14px; font-size:13px; }
+.gift-stage { aspect-ratio:auto; height:clamp(150px, calc(var(--tg-viewport-stable-height, 100vh) * .28), 250px); border-radius:24px;
+  background:radial-gradient(circle at 22% 18%, rgba(255,255,255,.75), transparent 38%), radial-gradient(circle at 50% 46%, #cde7ff, #86bdf5); }
+.gift-stage::before, .gift-stage::after { content:""; position:absolute; inset:0; margin:auto; border:1px solid rgba(255,255,255,.55); border-radius:50%; pointer-events:none; }
+.gift-stage::before { width:78%; height:150%; transform:rotate(26deg); }
+.gift-stage::after { width:52%; height:120%; transform:rotate(-30deg); }
+#giftVideo, #giftLottie { inset:6%; width:88%; height:88%; object-fit:contain; z-index:2; }
+#giftImage { z-index:2; }
+.gift-fallback { z-index:2; font-size:64px; }
+.gift-meta { padding:12px 2px 0; }
+.headline { font-size:21px; }
+.gift-meta h2 { margin:4px 0 0; font-size:17px; }
+.gift-link { margin:2px 0 0; font-size:14px; }
+.price { margin:8px 0 2px; font-size:clamp(38px, 11vw, 50px); display:flex; align-items:center; justify-content:center; gap:8px; }
+.price-cur { margin:0; display:inline-flex; }
+.price-cur svg { width:.8em; height:.8em; filter:drop-shadow(0 2px 4px rgba(232,161,0,.35)); }
+.conv { margin:0 0 12px; color:var(--hint); font-size:15px; font-weight:600; }
+.rows { padding:2px 16px; border-radius:20px; } .row { padding:11px 0; font-size:16px; }
+.actions { padding-top:8px; gap:8px; } .btn { min-height:52px; font-size:17px; border-radius:18px; } .btn-secondary { min-height:46px; }
+.user-link { border:0; background:none; padding:0; color:var(--accent); font:inherit; cursor:pointer; }
+
+
+/* ===== v5: larger phone fit + clean animated gift stage ===== */
+.content-scroll {
+  padding: 9px 16px 8px;
+}
+
+.status-pill {
+  margin: 0 auto 9px;
+  padding: 7px 15px;
+  font-size: 14px;
+}
+
+.gift-stage {
+  height: clamp(185px, calc(var(--tg-viewport-stable-height, 100vh) * .255), 245px);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 50% 43%, rgba(255,255,255,.92) 0 7%, rgba(255,255,255,.38) 28%, transparent 52%),
+    radial-gradient(circle at 20% 15%, #dff4ff 0%, transparent 43%),
+    radial-gradient(circle at 82% 78%, #a8cfff 0%, transparent 48%),
+    linear-gradient(145deg,#d9efff 0%,#b6dcff 45%,#91bdf8 100%);
+}
+
+#giftVideo, #giftLottie {
+  inset: 2%;
+  width: 96%;
+  height: 96%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(31,76,124,.18));
+}
+
+.gift-lottie svg {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+
+/* Static preview is only a fallback. Keep it contained instead of stretching it. */
+#giftImage {
+  inset: 4%;
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  border-radius: 20px;
+}
+
+.gift-fallback { font-size: 68px; }
+
+.gift-meta { padding: 12px 2px 0; }
+.headline { font-size: 23px; line-height: 1.16; }
+.gift-meta h2 { margin: 4px 0 0; font-size: 19px; }
+.gift-link { margin: 3px 0 0; font-size: 15px; }
+
+.price {
+  margin: 8px 0 2px;
+  font-size: clamp(44px, 11.5vw, 56px);
+  gap: 8px;
+}
+
+.conv {
+  margin: 1px 0 10px;
+  font-size: 15px;
+}
+
+.rows {
+  padding: 2px 17px;
+  border-radius: 21px;
+}
+.row {
+  padding: 11px 0;
+  font-size: 16px;
+}
+
+.actions {
+  padding: 9px 16px var(--safe-bottom);
+  gap: 8px;
+}
+.btn {
+  min-height: 54px;
+  font-size: 18px;
+  border-radius: 19px;
+}
+.btn-secondary { min-height: 48px; }
+
+/* Keep all main information visible on shorter phones. */
+@media (max-height: 760px) {
+  .gift-stage {
+    height: clamp(165px, calc(var(--tg-viewport-stable-height, 100vh) * .23), 205px);
+  }
+  .status-pill { margin-bottom: 6px; padding: 6px 13px; font-size: 13px; }
+  .gift-meta { padding-top: 8px; }
+  .headline { font-size: 20px; }
+  .gift-meta h2 { font-size: 17px; }
+  .gift-link { font-size: 13px; }
+  .price { margin-top: 5px; font-size: 40px; }
+  .conv { margin-bottom: 7px; font-size: 13px; }
+  .row { padding: 8px 0; font-size: 14px; }
+  .btn { min-height: 48px; font-size: 16px; }
+  .btn-secondary { min-height: 44px; }
+}
+
+/* Very short screens: compact only as much as needed to avoid scrolling. */
+@media (max-height: 650px) {
+  .content-scroll { padding-top: 5px; }
+  .gift-stage { height: 145px; }
+  .headline { font-size: 18px; }
+  .gift-meta h2 { font-size: 15px; }
+  .price { font-size: 34px; margin-top: 3px; }
+  .row { padding: 6px 0; font-size: 13px; }
+  .actions { padding-top: 5px; gap: 5px; }
+  .btn { min-height: 44px; font-size: 15px; }
+}
+
+
+/* GiftRelayer loading overlay — matches the light-blue Mini App theme */
+.gr-loading {position:fixed;inset:0;z-index:10000;display:flex;justify-content:center;align-items:center;padding:24px;background:radial-gradient(circle at 50% 32%,#d7edff 0%,#ebf5ff 50%,#f8fbff 100%);opacity:1;visibility:visible;transition:opacity .36s ease,visibility .36s ease;}
+.gr-loading.is-done {opacity:0;visibility:hidden;pointer-events:none;}
+.gr-loading-inner {width:min(100%,330px);text-align:center;color:#173352;}
+.gr-loading-gift {position:relative;display:grid;place-items:center;width:100px;height:100px;margin:0 auto 22px;border-radius:30px;background:linear-gradient(140deg,#74bbff,#247fe3);box-shadow:0 16px 36px rgba(39,132,223,.25);font-size:49px;animation:gr-bob 2.2s ease-in-out infinite;}
+.gr-loading-gift:before {content:'✦';position:absolute;right:-15px;top:-14px;font-size:27px;color:#f6b943;animation:gr-glint 1.8s ease-in-out infinite;}
+.gr-loading-title {font-size:27px;font-weight:800;letter-spacing:-.03em;margin-bottom:9px;}
+.gr-loading-desc {font-size:15px;color:#617c99;min-height:40px;font-weight:600;}
+.gr-loading-track {height:7px;overflow:hidden;border-radius:20px;background:#d1e6f8;margin:20px 0 15px;}
+.gr-loading-progress {width:34%;height:100%;border-radius:20px;background:linear-gradient(90deg,#50b8ff,#2188ed);animation:gr-load 1.4s ease-in-out infinite;}
+.gr-loading-note {font-size:12px;color:#8da2b8;}
+@keyframes gr-bob {0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes gr-glint {0%,100%{opacity:.45;transform:scale(.8)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes gr-load {0%{transform:translateX(-110%)}100%{transform:translateX(325%)}}
+@media(prefers-reduced-motion:reduce){.gr-loading-gift,.gr-loading-gift:before,.gr-loading-progress{animation:none}}
+
+/* Offer presentation: modestly larger media and controls */
+@media (min-height: 700px) {
+ .gift-stage { height:clamp(210px, 32dvh, 300px); }
+ .headline { font-size:clamp(23px,5vw,27px); }
+ .gift-meta h2 { font-size:20px; }
+ .btn { min-height:58px; }
+}
+</style>
+</head>
+<body>
+<div id="grLoading" class="gr-loading" role="status" aria-live="polite">
+  <div class="gr-loading-inner">
+    <div class="gr-loading-gift" aria-hidden="true">🎁</div>
+    <div class="gr-loading-title">GiftRelayer</div>
+    <div id="grLoadingText" class="gr-loading-desc">Загружаем предложение…</div>
+    <div class="gr-loading-track"><div class="gr-loading-progress"></div></div>
+    <div class="gr-loading-note">Подключаемся к Telegram</div>
+  </div>
+</div>
+
+  <div id="app" class="app-shell">
+    <main class="content-scroll">
+      <section class="topbar"><h1 id="pageTitle">Предложение</h1><button id="closeTop" class="icon-button" aria-label="Закрыть">×</button></section>
+      <section id="screen" class="screen-card skeleton-card">
+        <div class="status-pill"><span class="dot"></span><span id="statusText">Загрузка…</span></div>
+        <div class="gift-stage">
+          <img id="giftImage" alt="Telegram Gift" hidden />
+          <video id="giftVideo" class="gift-media" autoplay loop muted playsinline preload="auto" hidden></video>
+          <div id="giftLottie" class="gift-media gift-lottie" hidden></div>
+          <div id="giftFallback" class="gift-fallback">🎁</div>
+        </div>
+        <div class="gift-meta">
+          <div id="subtitle" class="headline">Проверяем предложение…</div>
+          <h2 id="giftName">Загружаем подарок</h2>
+          <button id="giftLink" class="gift-link" hidden>Открыть подарок в Telegram</button>
+          <div id="price" class="price">—</div>
+          <div id="conv" class="conv" hidden></div>
+          <div class="rows">
+            <div class="row"><span>Срок действия</span><b id="timer">—</b></div>
+            <div class="row"><span>Действует до</span><b id="until">—</b></div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <section id="actions" class="actions actions-dock"></section>
+  </div>
+
+  <div id="overlay" class="overlay" hidden>
+    <div id="sheet" class="sheet" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <script>
+(() => {
+  const grLoader = document.getElementById('grLoading');
+  const grLoaderText = document.getElementById('grLoadingText');
+  const grLoadingSteps = [
+    'Загружаем предложение…',
+    'Получаем данные подарка…',
+    'Проверяем статус оффера…'
+  ];
+  let grStep = 0;
+  const grInterval = setInterval(() => {
+    if (!grLoader || grLoader.classList.contains('is-done')) return;
+    grStep = Math.min(grStep + 1, grLoadingSteps.length - 1);
+    if (grLoaderText) grLoaderText.textContent = grLoadingSteps[grStep];
+  }, 1100);
+  const grStartedAt = Date.now();
+  function finishGrLoading() {
+    clearInterval(grInterval);
+    if (!grLoader || grLoader.classList.contains('is-done')) return;
+    const wait = Math.max(0, 1100 - (Date.now() - grStartedAt));
+    setTimeout(() => {
+      grLoader.classList.add('is-done');
+      setTimeout(() => grLoader.remove(), 420);
+    }, wait);
+  }
+  const tg = window.Telegram?.WebApp;
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    screen: $('screen'), actions: $('actions'), giftImage: $('giftImage'), giftVideo: $('giftVideo'), giftLottie: $('giftLottie'), giftFallback: $('giftFallback'),
+    giftName: $('giftName'), subtitle: $('subtitle'), price: $('price'), timer: $('timer'),
+    statusText: $('statusText'), overlay: $('overlay'), sheet: $('sheet'), pageTitle: $('pageTitle'), closeTop: $('closeTop')
+  };
+
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    try { tg.setHeaderColor('#eaf4ff'); tg.setBackgroundColor('#ffffff'); tg.setBottomBarColor('#ffffff'); } catch (_) {}
+  }
+
+  const params = new URLSearchParams(location.search);
+  const offerId = tg?.initDataUnsafe?.start_param || params.get('tgWebAppStartParam') || params.get('offer_id') || params.get('offer') || '';
+  const initData = tg?.initData || '';
+  let offer = null;
+  let timerHandle = null;
+  let lastConv = null;
+  let lottieAnim = null;      // were undeclared -> clearGiftMedia() threw and the photo never loaded
+  let currentMediaUrl = null;
+
+  const api = async (path, options = {}) => {
+    const headers = { 'X-Telegram-Init-Data': initData, ...(options.headers || {}) };
+    const res = await fetch(path, { ...options, headers });
+    let body = {};
+    try { body = await res.json(); } catch (_) {}
+    if (!res.ok) throw Object.assign(new Error(body.error || 'Ошибка сервера'), { body, status: res.status });
+    return body;
+  };
+
+  const haptic = (type = 'light') => { try { tg?.HapticFeedback?.impactOccurred(type); } catch (_) {} };
+  const close = () => tg?.close ? tg.close() : window.close();
+  els.closeTop.addEventListener('click', close);
+
+  function button(text, cls, onClick) {
+    const b = document.createElement('button');
+    b.className = `btn ${cls}`;
+    b.textContent = text;
+    b.onclick = onClick;
+    return b;
+  }
+
+  function setActions(...buttons) {
+    els.actions.replaceChildren(...buttons);
+  }
+
+  function formatTime(total) {
+    total = Math.max(0, total | 0);
+    const h = String(Math.floor(total / 3600)).padStart(2, '0');
+    const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+    const s = String(total % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
+  function startTimer(seconds) {
+    clearInterval(timerHandle);
+    let left = Math.max(0, seconds || 0);
+    const total = Math.max(left, 6 * 3600);
+    const bar = document.getElementById('timerBar');
+    const paint = () => {
+      els.timer.textContent = left > 0 ? formatTime(left) : 'Истёк';
+      if (bar) bar.style.width = `${Math.min(100, Math.max(0, left) / total * 100)}%`;
+      left--;
+    };
+    paint(); timerHandle = setInterval(paint, 1000);
+  }
+
+  function showSheet(title, text, actions, loading = false) {
+    // Values may contain names and titles from Telegram. Always use textContent.
+    const nodes = [];
+    if (loading) {
+      const spinner = document.createElement('div'); spinner.className = 'loader'; nodes.push(spinner);
+    }
+    const h = document.createElement('h3'); h.textContent = title;
+    const p = document.createElement('p'); p.textContent = text;
+    const box = document.createElement('div'); box.className = 'sheet-actions';
+    (actions || []).forEach(a => box.appendChild(button(a.text, a.cls || 'btn-ghost', a.onClick)));
+    els.sheet.replaceChildren(...nodes, h, p, box);
+    els.overlay.hidden = false;
+  }
+  function hideSheet() { els.overlay.hidden = true; }
+  els.overlay.addEventListener('click', (e) => { if (e.target === els.overlay) hideSheet(); });
+
+  function clearGiftMedia() {
+    if (lottieAnim) {
+      try { lottieAnim.destroy(); } catch (_) {}
+      lottieAnim = null;
+    }
+    if (currentMediaUrl) {
+      try { URL.revokeObjectURL(currentMediaUrl); } catch (_) {}
+      currentMediaUrl = null;
+    }
+    els.giftImage.hidden = true;
+    els.giftImage.removeAttribute('src');
+    els.giftVideo.pause();
+    els.giftVideo.hidden = true;
+    els.giftVideo.removeAttribute('src');
+    els.giftVideo.load();
+    els.giftLottie.hidden = true;
+    els.giftLottie.innerHTML = '';
+    els.giftFallback.hidden = false;
+  }
+
+  function showFallbackGift() {
+    clearGiftMedia();
+    els.giftFallback.hidden = false;
+  }
+
+  async function loadStaticGiftImage() {
+    if (!offerId || !initData) return showFallbackGift();
+
+    clearGiftMedia();
+
+    const url =
+      `/api/offers/${encodeURIComponent(offerId)}/gift-image` +
+      `?init_data=${encodeURIComponent(initData)}&v=gift-static-4`;
+
+    els.giftImage.onload = () => {
+      els.giftFallback.hidden = true;
+      els.giftImage.hidden = false;
+    };
+
+    els.giftImage.onerror = () => {
+      console.error('Gift image load failed');
+      showFallbackGift();
+    };
+
+    els.giftImage.src = url;
+  }
+
+  async function loadGiftMedia() {
+    if (!offerId || !initData) return;
+    clearGiftMedia();
+
+    try {
+      const res = await fetch(`/api/offers/${encodeURIComponent(offerId)}/gift-media?v=transparent-v6`, {
+        headers: { 'X-Telegram-Init-Data': initData },
+        cache: 'no-store'
+      });
+      if (!res.ok) return loadStaticGiftImage();
+
+      const kind = (res.headers.get('X-Gift-Media-Kind') || '').toLowerCase();
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+
+      if (kind === 'lottie' || contentType.includes('application/json')) {
+        const animationData = await res.json();
+        if (!window.lottie || !animationData) return loadStaticGiftImage();
+
+        els.giftFallback.hidden = true;
+        els.giftLottie.hidden = false;
+        lottieAnim = window.lottie.loadAnimation({
+          container: els.giftLottie,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          animationData,
+          rendererSettings: { preserveAspectRatio: 'xMidYMid meet' }
+        });
+        return;
+      }
+
+      const blob = await res.blob();
+      if (!blob || blob.size < 32) return loadStaticGiftImage();
+
+      currentMediaUrl = URL.createObjectURL(blob);
+
+      if (kind === 'video' || contentType.includes('video/webm')) {
+        els.giftVideo.oncanplay = async () => {
+          els.giftFallback.hidden = true;
+          els.giftVideo.hidden = false;
+          try { await els.giftVideo.play(); } catch (_) {}
+        };
+        els.giftVideo.onerror = loadStaticGiftImage;
+        els.giftVideo.src = currentMediaUrl;
+        els.giftVideo.load();
+        return;
+      }
+
+      els.giftImage.onload = () => {
+        els.giftFallback.hidden = true;
+        els.giftImage.hidden = false;
+      };
+      els.giftImage.onerror = loadStaticGiftImage;
+      els.giftImage.src = currentMediaUrl;
+    } catch (_) {
+      loadStaticGiftImage();
+    }
+  }
+
+  const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f5a623"/></linearGradient></defs><path d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.2 1.2-6.5L2.5 9.5l6.6-.9z" fill="url(#sg)" stroke="#e39a10" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+
+  function renderBase(o) {
+    offer = o;
+    els.screen.classList.remove('skeleton-card');
+    els.giftName.textContent = o.gift.name;
+    const until = document.getElementById('until');
+    if (until) until.textContent = new Date(Date.now() + (o.seconds_left || 0) * 1000).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+    const gl = document.getElementById('giftLink');
+    if (gl && o.gift?.url) {
+      gl.hidden = false;
+      gl.onclick = () => { haptic(); try { tg?.openTelegramLink ? tg.openTelegramLink(o.gift.url) : window.open(o.gift.url, '_blank'); } catch (_) {} };
+    }
+    const val = document.createElement('span'); val.className = 'price-val'; val.textContent = o.price.value;
+    const cur = document.createElement('span'); cur.className = 'price-cur';
+    if (o.price.currency === 'звёзд') cur.innerHTML = STAR_SVG; else cur.textContent = o.price.currency;
+    els.price.replaceChildren(val, cur);
+    if (o.conversion) lastConv = o.conversion;
+    const conv = document.getElementById('conv');
+    if (conv) {
+      if (lastConv) {
+        const f = (n) => Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        conv.textContent = `≈ ${lastConv.ton != null ? f(lastConv.ton) + ' TON  •  ' : ''}${f(lastConv.usd)} $`;
+        conv.hidden = false;
+      } else { conv.hidden = true; }
+    }
+    startTimer(o.seconds_left);
+  }
+
+  function statusScreen(icon, title, text, buttonText = 'Закрыть') {
+    clearInterval(timerHandle);
+    els.pageTitle.textContent = 'GiftRelayer';
+    const wrap = document.createElement('div'); wrap.className = 'status-screen';
+    const symbol = document.createElement('div'); symbol.className = 'status-icon'; symbol.textContent = icon;
+    const heading = document.createElement('h2'); heading.textContent = title;
+    const para = document.createElement('p'); para.textContent = text;
+    wrap.append(symbol, heading, para);
+    els.screen.replaceChildren(wrap);
+    setActions(button(buttonText, 'btn-primary', close));
+  }
+
+  function buyerDisplayName(o) {
+    const username = String(o?.creator?.username || '').replace(/^@/, '');
+    if (/^[A-Za-z0-9_]{5,32}$/.test(username)) return '@' + username;
+    return 'Отправьте подарок покупателю';
+  }
+
+  // Telegram exposes openTelegramLink(), but not a supported JS API to
+  // programmatically minimize the Mini App. Never call tg.close() here.
+  function showBuyerInstructions() {
+    haptic();
+    showSheet('Передайте подарок покупателю',
+      'Сверните Mini App стрелкой ↓ в заголовке Telegram. В исходной переписке откройте профиль покупателя и передайте подарок. Затем вернитесь в Mini App и нажмите «Подарок был передан».', [
+      { text: 'Понятно, сверну вручную', cls: 'btn-primary', onClick: hideSheet },
+    ]);
+  }
+
+  function openBuyer() {
+    const username = String(offer?.creator?.username || '').replace(/^@/, '');
+    if (!/^[A-Za-z0-9_]{5,32}$/.test(username)) {
+      showBuyerInstructions();
+      return;
+    }
+    // ?profile is Telegram's documented deep-link option for the user's
+    // PROFILE rather than the chat. The Telegram client should put the Mini App
+    // behind the opened profile; it is not closed or destroyed.
+    const profileLink = `https://t.me/${username}?profile`;
+    haptic('medium');
+    if (tg?.openTelegramLink) {
+      try {
+        tg.openTelegramLink(profileLink);
+        return;
+      } catch (error) {
+        console.warn('Could not open Telegram profile link', error);
+      }
+    }
+    showBuyerInstructions();
+  }
+
+  async function doAccept(btn) {
+    btn.disabled = true; haptic('medium');
+    try {
+      const body = await api(`/api/offers/${encodeURIComponent(offerId)}/accept`, { method: 'POST' });
+      offer = body.offer; renderAccepted(offer);
+    } catch (e) {
+      if (e.body?.code === 'own_offer') {
+        showSheet('Нельзя принять собственное предложение', 'Этот оффер был создан вами.', [{ text: 'Закрыть', cls: 'btn-primary', onClick: close }]);
+      } else {
+        showSheet('Не удалось принять предложение', e.message, [{ text: 'Понятно', cls: 'btn-primary', onClick: hideSheet }]);
+      }
+    } finally { btn.disabled = false; }
+  }
+
+  function confirmDecline() {
+    haptic();
+    showSheet('Отклонить предложение?', 'После этого предложение станет недоступно.', [
+      { text: 'Отклонить', cls: 'btn-secondary', onClick: doDecline },
+      { text: 'Назад', cls: 'btn-ghost', onClick: hideSheet },
+    ]);
+  }
+
+  async function doDecline() {
+    hideSheet();
+    try {
+      await api(`/api/offers/${encodeURIComponent(offerId)}/decline`, { method: 'POST' });
+      haptic('medium');
+      statusScreen('❌', 'Предложение отклонено', `Вы отказались от предложения на ${offer.gift.name}. Оффер больше не активен.`);
+    } catch (e) {
+      showSheet('Не удалось отклонить', e.message, [{ text: 'Понятно', cls: 'btn-primary', onClick: hideSheet }]);
+    }
+  }
+
+  function renderActive(o) {
+    renderBase(o);
+    els.pageTitle.textContent = 'Предложение';
+    els.statusText.textContent = 'Оффер активен';
+    els.subtitle.replaceChildren();
+    if (o.creator?.username) {
+      const u = document.createElement('button');
+      u.className = 'user-link'; u.textContent = '@' + o.creator.username; u.onclick = openBuyer;
+      els.subtitle.append(u, ' хочет купить ваш подарок');
+    } else { els.subtitle.textContent = 'Покупатель предлагает сделку'; }
+    const accept = button('Принять оффер', 'btn-primary', () => doAccept(accept));
+    const decline = button('Отклонить', 'btn-secondary', confirmDecline);
+    setActions(accept, decline);
+  }
+
+  function renderAccepted(o) {
+    renderBase(o);
+    els.pageTitle.textContent = 'Передача подарка';
+    els.statusText.textContent = 'Предложение принято';
+    els.subtitle.textContent = 'Передайте подарок покупателю';
+    els.screen.querySelector('.info-box.buyer-info')?.remove();
+    const info = document.createElement('div');
+    info.className = 'info-box buyer-info';
+    const heading = document.createElement('strong'); heading.textContent = 'Кому передать';
+    const label = document.createElement('div'); label.textContent = buyerDisplayName(o);
+    label.style.marginTop = '7px'; label.style.fontWeight = '700'; label.style.color = 'var(--text)';
+    info.append(heading, label);
+    const hasUsername = /^@?[A-Za-z0-9_]{5,32}$/.test(o.creator?.username || '');
+    if (hasUsername) {
+      info.onclick = openBuyer;
+      info.style.cursor = 'pointer';
+      info.setAttribute('role', 'button');
+      info.setAttribute('tabindex', '0');
+      info.setAttribute('aria-label', 'Открыть профиль покупателя');
+      info.onkeydown = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openBuyer(); }
+      };
+    }
+    els.screen.querySelector('.gift-meta')?.appendChild(info);
+    const transfer = button(hasUsername ? '🎁 Открыть профиль покупателя' : '🎁 Как передать подарок',
+       'btn-primary', openBuyer);
+    const confirm = button('✅ Подарок был передан', 'btn-success', () => verifyTransfer(confirm));
+    if (o.nft_verification_available) setActions(transfer, confirm);
+    else setActions(button('Ожидайте подтверждения сделки', 'btn-ghost', () => showSheet('Проверка недоступна', 'Проверка передачи поддерживается только для коллекционных подарков Telegram.', [{ text: 'Понятно', cls: 'btn-primary', onClick: hideSheet }])));
+  }
+
+  async function verifyTransfer(btn) {
+    btn.disabled = true; haptic('medium');
+    showSheet('Проверяем владельца…', `Считываем текущего владельца ${offer.gift.name} и сравниваем его с покупателем.`, [], true);
+    try {
+      const body = await api(`/api/offers/${encodeURIComponent(offerId)}/confirm-transfer`, { method: 'POST' });
+      hideSheet();
+      if (body.result === 'VERIFIED') {
+        statusScreen('✅', 'Передача подтверждена', `${offer.gift.name} обнаружен у покупателя. Сделка успешно завершена.`);
+      } else if (body.result === 'NOT_TRANSFERRED') {
+        showSheet('Подарок всё ещё у вас', `Мы проверили ${offer.gift.name}: владелец не изменился на покупателя. Сначала передайте подарок, затем нажмите проверку ещё раз.`, [
+          { text: '🎁 Передать подарок', cls: 'btn-primary', onClick: () => { hideSheet(); openBuyer(); } },
+          { text: 'Проверить ещё раз', cls: 'btn-ghost', onClick: () => { hideSheet(); verifyTransfer(btn); } },
+        ]);
+      } else {
+        showSheet(
+          'Проверка пока не завершена',
+          'Telegram пока не дал надёжно определить владельца. Сделка остаётся активной — попробуйте ещё раз через несколько секунд.',
+          [
+            { text: 'Проверить ещё раз', cls: 'btn-primary', onClick: () => { hideSheet(); verifyTransfer(btn); } },
+            { text: 'Закрыть', cls: 'btn-ghost', onClick: hideSheet },
+          ]
+        );
+      }
+    } catch (e) {
+      hideSheet();
+      showSheet('Проверка не выполнена', e.message, [{ text: 'Попробовать снова', cls: 'btn-primary', onClick: () => { hideSheet(); verifyTransfer(btn); } }]);
+    } finally { btn.disabled = false; }
+  }
+
+  function renderOffer(o) {
+    if (o.action_blocked === 'OWN_OFFER') {
+      renderBase(o);
+      setActions();
+      showSheet('Нельзя принять собственное предложение', 'Этот оффер был создан вами.', [{ text: 'Закрыть', cls: 'btn-primary', onClick: close }]);
+      return;
+    }
+    if (o.action_blocked === 'NOT_RECIPIENT') {
+      statusScreen('🔒', 'Предложение недоступно', 'Этот оффер предназначен другому пользователю.');
+      return;
+    }
+    if (o.status === 'ACTIVE') return renderActive(o);
+    if (o.status === 'ACCEPTED') return renderAccepted(o);
+    if (o.status === 'DECLINED') return statusScreen('❌', 'Предложение отклонено', `Оффер на ${o.gift.name} больше не активен.`);
+    if (o.status === 'TRANSFER_PENDING') return renderAccepted(o);
+    if (o.status === 'TRANSFER_CONFIRMED') return statusScreen('✅', 'Подарок передан', `Передача ${o.gift.name} подтверждена.`);
+    if (o.status === 'EXPIRED') return statusScreen('⏱', 'Срок предложения истёк', 'Этот оффер больше недоступен.');
+    return statusScreen('🔒', 'Сделка завершена', 'Этот оффер больше не активен.');
+  }
+
+  async function init() {
+    if (!tg || !initData) {
+      finishGrLoading();
+      return statusScreen('⚠️', 'Откройте через Telegram', 'Mini App должен быть запущен из кнопки GiftRelayer внутри Telegram.');
+    }
+    if (!offerId) {
+      finishGrLoading();
+      return statusScreen('⚠️', 'Оффер не выбран', 'Откройте Mini App кнопкой «Принять» под конкретным предложением.');
+    }
+    try {
+      const body = await api(`/api/offers/${encodeURIComponent(offerId)}`);
+      renderOffer(body.offer);
+      loadGiftMedia();
+      finishGrLoading();
+    } catch (e) {
+      statusScreen('⚠️', 'Не удалось открыть предложение', (e.status ? `Ошибка API ${e.status}: ` : '') + (e.message || 'Попробуйте открыть оффер снова из Telegram.'));
+      finishGrLoading();
+    }
+  }
+
+  const grTimeout = setTimeout(() => {
+    if (grLoader && !grLoader.classList.contains('is-done')) {
+      statusScreen('⚠️', 'Сервер долго отвечает', 'Не удалось быстро получить данные предложения. Закройте Mini App и попробуйте ещё раз.');
+      finishGrLoading();
+    }
+  }, 16000);
+  // Clear the loading deadline after the actual API response.
+  // The overlay itself is removed only when data or an error screen is ready.
+  init().finally(() => clearTimeout(grTimeout));
+})();
+
+</script>
+</body>
+</html>
